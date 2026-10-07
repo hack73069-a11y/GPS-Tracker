@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>GPS Live Tracker</title>
+
+    <!-- Leaflet CSS -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- LOCATION PERMISSION PAGE -->
+    <div id="permissionPage">
+
+        <div class="permissionBox">
+
+            <div class="locationIcon">📍</div>
+
+            <h1>Location Required</h1>
+
+            <p>
+                We need your current location to continue.
+            </p>
+
+            <button id="allowLocationButton">
+                Allow Location
+            </button>
+
+            <p id="permissionMessage"></p>
+
+        </div>
+
+    </div>
+
+
+    <!-- MAIN TRACKER -->
+    <div id="trackerPage" style="display: none;">
+
+        <header>
+
+            <h1>📍 GPS Live Tracker</h1>
+
+            <p>
+                College GPS Tracking Project
+            </p>
+
+        </header>
+
+
+        <main>
+
+            <section class="panel">
+
+                <h2>Current Location</h2>
+
+                <input
+                    type="text"
+                    id="deviceName"
+                    placeholder="Enter device name"
+                >
+
+                <button id="startButton">
+                    Get Current Location
+                </button>
+
+                <button id="stopButton" disabled>
+                    Stop
+                </button>
+
+                <p id="status">
+                    Waiting for location...
+                </p>
+
+            </section>
+
+
+            <section class="panel">
+
+                <h2>Location Information</h2>
+
+                <div id="deviceList">
+                    No location received.
+                </div>
+
+            </section>
+
+
+            <!-- MAP -->
+            <div id="map"></div>
+
+        </main>
+
+    </div>
+
+
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Leaflet -->
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+    <!-- Your JavaScript -->
+    <script src="app.js"></script>
+
+</body>
+
+</html>
