@@ -46,26 +46,41 @@ L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
         maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors"
+
+        attribution:
+            "&copy; OpenStreetMap contributors"
     }
 ).addTo(map);
 
-let marker = null;
+
+// Store all markers
+const markers = {};
+
+
+// Store all users
+const users = {};
 
 
 // ======================================================
-// GPS VARIABLES
+// SHOW TRACKER
 // ======================================================
 
-let watchId = null;
+function showTracker() {
 
-let bestAccuracy = Infinity;
+    permissionPage.style.display =
+        "none";
 
-let bestPosition = null;
+    trackerPage.style.display =
+        "block";
 
-let firstLocation = false;
 
-let improvementTimer = null;
+    setTimeout(
+        () => {
+            map.invalidateSize();
+        },
+        200
+    );
+}
 
 
 // ======================================================
@@ -87,286 +102,100 @@ function requestLocation() {
         "📡 Finding your location...";
 
 
-    console.log("");
-    console.log("======================================");
-    console.log("📡 STARTING LOCATION SEARCH");
-    console.log("======================================");
+    navigator.geolocation.getCurrentPosition(
 
+        function(position) {
 
-    bestAccuracy = Infinity;
+            const latitude =
+                position.coords.latitude;
 
-    bestPosition = null;
+            const longitude =
+                position.coords.longitude;
 
-    firstLocation = false;
+            const accuracy =
+                position.coords.accuracy;
 
 
-    // Start watching location
-    watchId =
-        navigator.geolocation.watchPosition(
+            console.log("");
+            console.log("📍 MY LOCATION");
 
-            function(position) {
+            console.log(
+                "Latitude:",
+                latitude
+            );
 
-                const latitude =
-                    position.coords.latitude;
+            console.log(
+                "Longitude:",
+                longitude
+            );
 
-                const longitude =
-                    position.coords.longitude;
+            console.log(
+                "Accuracy:",
+                Math.round(accuracy),
+                "meters"
+            );
 
-                const accuracy =
-                    position.coords.accuracy;
 
+            showTracker();
 
-                console.log("");
-                console.log("📍 LOCATION READING");
 
-                console.log(
-                    "Latitude :",
-                    latitude
-                );
+            sendMyLocation(
+                latitude,
+                longitude,
+                accuracy
+            );
 
-                console.log(
-                    "Longitude:",
-                    longitude
-                );
+        },
 
-                console.log(
-                    "Accuracy :",
-                    Math.round(accuracy),
-                    "meters"
-                );
 
+        function(error) {
 
-                // Keep best reading
-                if (accuracy < bestAccuracy) {
+            console.log(
+                "❌ Location error:",
+                error.message
+            );
 
-                    bestAccuracy = accuracy;
 
-                    bestPosition = position;
+            if (error.code === 1) {
 
-
-                    console.log(
-                        "⭐ BEST ACCURACY:",
-                        Math.round(accuracy),
-                        "meters"
-                    );
-                }
-
-
-                // ------------------------------------------
-                // ACCEPT LOCATION
-                // ------------------------------------------
-
-                if (!firstLocation) {
-
-                    /*
-                     * Don't accept extremely inaccurate
-                     * location readings.
-                     */
-
-                    if (accuracy <= 200) {
-
-                        firstLocation = true;
-
-
-                        console.log("");
-                        console.log(
-                            "✅ LOCATION ACCEPTED"
-                        );
-
-
-                        showTracker();
-
-
-                        sendLocation(
-                            latitude,
-                            longitude,
-                            accuracy
-                        );
-
-
-                        /*
-                         * Keep GPS running for a few seconds
-                         * so we can improve the position.
-                         */
-
-                        improvementTimer =
-                            setTimeout(
-                                finishGPS,
-                                10000
-                            );
-
-                    }
-
-                    else {
-
-                        permissionMessage.textContent =
-                            `📡 Searching for GPS... Accuracy: ${Math.round(accuracy)}m`;
-
-                    }
-
-                }
-
-                // ------------------------------------------
-                // BETTER LOCATION AFTER FIRST FIX
-                // ------------------------------------------
-
-                else {
-
-                    if (
-                        accuracy <
-                        bestAccuracy
-                    ) {
-
-                        console.log(
-                            "⭐ Better location found."
-                        );
-
-
-                        sendLocation(
-                            latitude,
-                            longitude,
-                            accuracy
-                        );
-
-                    }
-
-                }
-
-            },
-
-
-            // ==========================================
-            // ERROR
-            // ==========================================
-
-            function(error) {
-
-                console.log("");
-                console.log(
-                    "❌ LOCATION ERROR"
-                );
-
-                console.log(
-                    "Code:",
-                    error.code
-                );
-
-                console.log(
-                    "Message:",
-                    error.message
-                );
-
-
-                if (error.code === 1) {
-
-                    permissionMessage.textContent =
-                        "❌ Location permission denied. Please allow location.";
-
-                }
-
-                else if (error.code === 2) {
-
-                    permissionMessage.textContent =
-                        "❌ Location unavailable. Turn on Location.";
-
-                }
-
-                else if (error.code === 3) {
-
-                    permissionMessage.textContent =
-                        "❌ Location timed out. Trying again...";
-
-                }
-
-            },
-
-
-            // ==========================================
-            // OPTIONS
-            // ==========================================
-
-            {
-
-                enableHighAccuracy: true,
-
-                timeout: 20000,
-
-                maximumAge: 0
+                permissionMessage.textContent =
+                    "❌ Location permission denied.";
 
             }
-        );
 
+            else if (error.code === 2) {
 
-    // ==========================================
-    // MAXIMUM WAIT
-    // ==========================================
+                permissionMessage.textContent =
+                    "❌ Location unavailable.";
 
-    setTimeout(
-        function() {
+            }
 
-            if (!firstLocation && bestPosition) {
+            else if (error.code === 3) {
 
-                console.log(
-                    "⏱️ Using best available location."
-                );
-
-
-                firstLocation = true;
-
-
-                showTracker();
-
-
-                sendLocation(
-
-                    bestPosition.coords.latitude,
-
-                    bestPosition.coords.longitude,
-
-                    bestPosition.coords.accuracy
-
-                );
-
-
-                finishGPS();
+                permissionMessage.textContent =
+                    "❌ Location request timed out.";
 
             }
 
         },
-        20000
+
+
+        {
+            enableHighAccuracy: true,
+
+            timeout: 20000,
+
+            maximumAge: 0
+        }
     );
 }
 
 
 // ======================================================
-// SHOW TRACKER
+// SEND MY LOCATION
 // ======================================================
 
-function showTracker() {
-
-    permissionPage.style.display =
-        "none";
-
-    trackerPage.style.display =
-        "block";
-
-
-    setTimeout(
-        function() {
-
-            map.invalidateSize();
-
-        },
-        200
-    );
-}
-
-
-// ======================================================
-// SEND LOCATION TO SERVER
-// ======================================================
-
-function sendLocation(
+function sendMyLocation(
     latitude,
     longitude,
     accuracy
@@ -377,167 +206,232 @@ function sendLocation(
         "User";
 
 
-    // Send to Node.js
+    const location = {
+
+        name: name,
+
+        latitude: latitude,
+
+        longitude: longitude,
+
+        accuracy: accuracy
+
+    };
+
+
     socket.emit(
         "location",
-        {
+        location
+    );
 
-            name: name,
 
-            latitude: latitude,
+    status.textContent =
+        `📍 Your location — accuracy ${Math.round(accuracy)}m`;
+}
 
-            longitude: longitude,
 
-            accuracy: accuracy
+// ======================================================
+// SHOW / UPDATE USER MARKER
+// ======================================================
+
+function showUser(
+    user
+) {
+
+    const id =
+        user.id;
+
+
+    users[id] = user;
+
+
+    // --------------------------------------------------
+    // Create marker if it doesn't exist
+    // --------------------------------------------------
+
+    if (!markers[id]) {
+
+        markers[id] =
+            L.marker(
+                [
+                    user.latitude,
+                    user.longitude
+                ]
+            ).addTo(map);
+
+    }
+
+    // --------------------------------------------------
+    // Update marker position
+    // --------------------------------------------------
+
+    else {
+
+        markers[id].setLatLng(
+            [
+                user.latitude,
+                user.longitude
+            ]
+        );
+
+    }
+
+
+    // --------------------------------------------------
+    // Marker popup
+    // --------------------------------------------------
+
+    markers[id].bindPopup(`
+
+        <b>📍 ${escapeHtml(user.name)}</b>
+
+        <br><br>
+
+        Latitude:
+        ${user.latitude}
+
+        <br>
+
+        Longitude:
+        ${user.longitude}
+
+        <br>
+
+        Accuracy:
+        ${Math.round(user.accuracy)} meters
+
+    `);
+
+
+    updateUserList();
+}
+
+
+// ======================================================
+// REMOVE USER
+// ======================================================
+
+function removeUser(
+    id
+) {
+
+    if (markers[id]) {
+
+        map.removeLayer(
+            markers[id]
+        );
+
+        delete markers[id];
+
+    }
+
+
+    delete users[id];
+
+
+    updateUserList();
+
+    console.log(
+        "❌ User removed:",
+        id
+    );
+}
+
+
+// ======================================================
+// UPDATE USER LIST
+// ======================================================
+
+function updateUserList() {
+
+    const userArray =
+        Object.values(users);
+
+
+    if (userArray.length === 0) {
+
+        deviceList.innerHTML =
+            "<p>No users sharing location.</p>";
+
+        return;
+    }
+
+
+    let html = `
+
+        <h3>
+            👥 Active Users:
+            ${userArray.length}
+        </h3>
+
+    `;
+
+
+    userArray.forEach(
+        (user) => {
+
+            html += `
+
+                <div
+                    style="
+                        background:#111827;
+                        padding:12px;
+                        margin:8px 0;
+                        border-radius:8px;
+                    "
+                >
+
+                    <b>📍 ${escapeHtml(user.name)}</b>
+
+                    <br>
+
+                    <small>
+                        Latitude:
+                        ${user.latitude}
+                    </small>
+
+                    <br>
+
+                    <small>
+                        Longitude:
+                        ${user.longitude}
+                    </small>
+
+                    <br>
+
+                    <small>
+                        Accuracy:
+                        ${Math.round(user.accuracy)}m
+                    </small>
+
+                </div>
+
+            `;
 
         }
     );
 
 
-    // Update map
-    showLocation(
-        latitude,
-        longitude,
-        name,
-        accuracy
-    );
-
-
-    // Update page
-    status.textContent =
-        `📍 Location found — accuracy ${Math.round(accuracy)}m`;
-
-
-    deviceList.innerHTML = `
-
-        <h3>📱 ${name}</h3>
-
-        <p>
-            <b>Latitude:</b>
-            ${latitude}
-        </p>
-
-        <p>
-            <b>Longitude:</b>
-            ${longitude}
-        </p>
-
-        <p>
-            <b>Accuracy:</b>
-            ${Math.round(accuracy)} meters
-        </p>
-
-    `;
-
+    deviceList.innerHTML =
+        html;
 }
 
 
 // ======================================================
-// SHOW LOCATION ON MAP
+// HTML ESCAPE
 // ======================================================
 
-function showLocation(
-    latitude,
-    longitude,
-    name,
-    accuracy
+function escapeHtml(
+    text
 ) {
 
-    // Remove old marker
-    if (marker) {
+    const div =
+        document.createElement("div");
 
-        map.removeLayer(marker);
+    div.textContent =
+        text;
 
-    }
-
-
-    // New marker
-    marker =
-        L.marker(
-            [
-                latitude,
-                longitude
-            ]
-        )
-        .addTo(map);
-
-
-    marker.bindPopup(`
-
-        <b>📍 ${name}</b>
-
-        <br><br>
-
-        Latitude:
-        ${latitude}
-
-        <br>
-
-        Longitude:
-        ${longitude}
-
-        <br>
-
-        Accuracy:
-        ${Math.round(accuracy)} meters
-
-    `);
-
-
-    marker.openPopup();
-
-
-    // Move map
-    map.setView(
-        [
-            latitude,
-            longitude
-        ],
-        17
-    );
-}
-
-
-// ======================================================
-// FINISH GPS SEARCH
-// ======================================================
-
-function finishGPS() {
-
-    console.log("");
-    console.log(
-        "🛑 GPS IMPROVEMENT FINISHED"
-    );
-
-
-    if (watchId !== null) {
-
-        navigator.geolocation.clearWatch(
-            watchId
-        );
-
-        watchId = null;
-
-    }
-
-
-    if (improvementTimer !== null) {
-
-        clearTimeout(
-            improvementTimer
-        );
-
-        improvementTimer = null;
-
-    }
-
-
-    console.log(
-        "Final best accuracy:",
-        Math.round(bestAccuracy),
-        "meters"
-    );
-
+    return div.innerHTML;
 }
 
 
@@ -563,8 +457,6 @@ startButton.addEventListener(
     "click",
     function() {
 
-        finishGPS();
-
         requestLocation();
 
     }
@@ -579,24 +471,8 @@ stopButton.addEventListener(
     "click",
     function() {
 
-        finishGPS();
-
-
         status.textContent =
             "Location sharing stopped.";
-
-
-        startButton.disabled =
-            false;
-
-
-        stopButton.disabled =
-            true;
-
-
-        console.log(
-            "🛑 LOCATION STOPPED"
-        );
 
     }
 );
@@ -614,6 +490,99 @@ socket.on(
             "🟢 Connected to GPS server"
         );
 
+
+        // Register this device
+        socket.emit(
+            "register",
+            {
+
+                name:
+                    deviceName.value.trim() ||
+                    "User"
+
+            }
+        );
+
+    }
+);
+
+
+// ======================================================
+// EXISTING ACTIVE USERS
+// ======================================================
+
+socket.on(
+    "activeUsers",
+    function(activeUsers) {
+
+        console.log(
+            "👥 Active users:",
+            activeUsers
+        );
+
+
+        activeUsers.forEach(
+            function(user) {
+
+                if (
+                    user.latitude !== null &&
+                    user.longitude !== null
+                ) {
+
+                    showUser(user);
+
+                }
+
+            }
+        );
+
+    }
+);
+
+
+// ======================================================
+// NEW / UPDATED USER LOCATION
+// ======================================================
+
+socket.on(
+    "userLocation",
+    function(user) {
+
+        console.log(
+            "📍 USER LOCATION:",
+            user
+        );
+
+
+        if (
+            user.latitude !== null &&
+            user.longitude !== null
+        ) {
+
+            showUser(user);
+
+        }
+
+    }
+);
+
+
+// ======================================================
+// USER DISCONNECTED
+// ======================================================
+
+socket.on(
+    "userDisconnected",
+    function(id) {
+
+        console.log(
+            "🔴 USER DISCONNECTED:",
+            id
+        );
+
+
+        removeUser(id);
+
     }
 );
 
@@ -628,23 +597,6 @@ socket.on(
 
         console.log(
             "🔴 Disconnected from GPS server"
-        );
-
-    }
-);
-
-
-// ======================================================
-// LOCATION FROM SERVER
-// ======================================================
-
-socket.on(
-    "locationUpdate",
-    function(location) {
-
-        console.log(
-            "📡 Server location:",
-            location
         );
 
     }
